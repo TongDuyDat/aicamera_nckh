@@ -1,46 +1,19 @@
-from datetime import datetime
-from time import sleep, time
-
+from flask_opencv_streamer.streamer import Streamer
 import cv2
-import numpy as np
 
-fps = 15
-width = 800
-height = 600
-colors = [
-    (0, 0, 255),
-    (255, 0, 0),
-    (0, 255, 0),
-]
-print(cv2.getBuildInformation())
-out = cv2.VideoWriter('appsrc ! videoconvert' + \
-    ' ! video/x-raw,format=I420' + \
-    ' ! x264enc speed-preset=ultrafast bitrate=600 key-int-max=' + str(fps * 2) + \
-    ' ! video/x-h264,profile=baseline' + \
-    ' ! rtspclientsink location=rtsp://localhost:8554/mystream',
-    cv2.CAP_GSTREAMER, 0, fps, (width, height), True)
-if not out.isOpened():
-    raise Exception("can't open video writer")
+port = 3030
+require_login = False
+streamer = Streamer(port, require_login)
 
-curcolor = 0
-start = time()
+# Open video device 0
+video_capture = cv2.VideoCapture("rtsp://localhost:8554/live")
 
 while True:
-    frame = np.zeros((height, width, 3), np.uint8)
+    _, frame = video_capture.read()
 
-    # create a rectangle
-    color = colors[curcolor]
-    curcolor += 1
-    curcolor %= len(colors)
-    for y in range(0, int(frame.shape[0] / 2)):
-        for x in range(0, int(frame.shape[1] / 2)):
-            frame[y][x] = color
+    streamer.update_frame(frame)
 
-    out.write(frame)
-    print("%s frame written to the server" % datetime.now())
+    if not streamer.is_streaming:
+        streamer.start_streaming()
 
-    now = time()
-    diff = (1 / fps) - now - start
-    if diff > 0:
-        sleep(diff)
-    start = now
+    cv2.waitKey(30)

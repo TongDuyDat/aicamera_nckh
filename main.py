@@ -3,7 +3,7 @@ import cv2
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from api.config import Config
-
+from waitress import serve
 import time, os
 app = Flask(__name__, static_folder='static')
 app.config.from_object(Config)
@@ -15,4 +15,5 @@ from api.register_api import api
 
 if __name__ == '__main__':
     app.register_blueprint(api)
-    app.run(debug=True, port=5000, threaded=True)
+    # serve(app, host="127.0.0.1", port=5000, threads=8)
+    app.run(host="127.0.0.1", port=5000, threaded=True)
